@@ -1,57 +1,68 @@
-import math
+import random
 
-X, O, EMPTY = 'X', 'O', ' '
+def print_board(board):
+    [print("|".join(row),"\n-----") for row in board]
 
-def game_over(b):
-    lines = b + list(zip(*b)) + [[b[i][i] for i in range(3)], [b[i][2 - i] for i in range(3)]]
-    return any(all(cell == lines[0][0] and cell != EMPTY for cell in line) for line in lines) or all(cell != EMPTY for row in b for cell in row)
+def check_win(board, player):
+    for i in range(3):
+        if all(board[i][j] == player for j in range(3)) or all(board[j][i] == player for j in range(3)):
+            return True
+    return all(board[i][i] == player for i in range(3)) or all(board[i][2 - i] == player for i in range(3))
 
-def evaluate(b):
-    if any(all(cell == X for cell in row) for row in b):
-        return 1
-    elif any(all(cell == O for cell in row) for row in b):
-        return -1
-    elif any(all(cell == X for cell in col) for col in zip(*b)):
-        return 1
-    elif any(all(cell == O for cell in col) for col in zip(*b)):
-        return -1
-    elif all(b[i][i] == X for i in range(3)) or all(b[i][2 - i] == X for i in range(3)):
-        return 1
-    elif all(b[i][i] == O for i in range(3)) or all(b[i][2 - i] == O for i in range(3)):
-        return -1
-    else:
-        return 0
+def is_full(board):
+    return all(board[i][j] != " " for i in range(3) for j in range(3))
 
-def minimax(b, d, m):
-    if game_over(b) or d == 0:
-        return evaluate(b)
-    return max(minimax([row[:] for row in b], d - 1, not m) for row in b for cell in row if cell == EMPTY) if m else min(minimax([row[:] for row in b], d - 1, not m) for row in b for cell in row if cell == EMPTY)
+def player_move(board, player, move):
+    row, col = move
+    if board[row][col] != " ": return False
+    board[row][col] = player
+    return True
 
-def print_board(b):
-    for row in b:
-        print(' | '.join(row))
-        print('-' * 5)
+def minimax(board, depth, is_maximizing):
+    scores = []
+    for row in range(3):
+        for col in range(3):
+            if board[row][col] == " ":
+                board[row][col] = 'O' if is_maximizing else 'X'
+                score = minimax(board, depth + 1, not is_maximizing)
+                scores.append(score)
+                board[row][col] = " "
+    return max(scores) if is_maximizing else min(scores) if scores else 0
 
-def play():
-    b = [[EMPTY] * 3 for _ in range(3)]
-    while not game_over(b):
-        if EMPTY in [cell for row in b for cell in row]:
-            human_move = tuple(map(int, input("Enter your move (row, column): ").split(',')))
-            if b[human_move[0]][human_move[1]] == EMPTY:
-                b[human_move[0]][human_move[1]] = O
-            else:
-                print("Invalid move! Try again.")
-                continue
-            print_board(b)
-            if not game_over(b):
-                ai_move = max([(r, c) for r in range(3) for c in range(3) if b[r][c] == EMPTY], key=lambda x: minimax([row[:] for row in b] if (x[0], x[1]) == x else copy.deepcopy(b), 5, True))
-                b[ai_move[0]][ai_move[1]] = X
-                print("AI's move:")
-                print_board(b)
+def ai_move(board, player):
+    return random.choice([(row, col) for row in range(3) for col in range(3) if board[row][col] == " "])
+
+def main():
+    board = [[" "]*3 for _ in range(3)]
+    players = ['X', 'O']
+    turn = 0
+
+    while True:
+        print_board(board)
+        player = players[turn % 2]
+
+        if player == 'X':
+            move = input("Enter your move as 'row,col' (e.g., 1,2): ")
+            move = tuple(map(int, move.split(',')))
+            while not (0 <= move[0] <= 2 and 0 <= move[1] <= 2) or not player_move(board, player, move):
+                move = input("Invalid move. Try again: ")
+                move = tuple(map(int, move.split(',')))
         else:
+            move = ai_move(board, player)
+            print(f"AI chooses {move[0]},{move[1]}")
+            player_move(board, player, move)
+
+        if check_win(board, player):
+            print_board(board)
+            print(f"Player {player} wins!")
             break
 
-    winner = 'AI' if any(all(cell == X for cell in row) for row in b) else 'You' if any(all(cell == O for cell in row) for row in b) else 'Nobody'
-    print(f"The winner is: {winner}")
+        if is_full(board):
+            print_board(board)
+            print("It's a draw!")
+            break
 
-play()
+        turn += 1
+
+if __name__ == "__main__":
+    main()
