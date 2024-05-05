@@ -35,10 +35,20 @@ model.add_cpds(cpd_burglary, cpd_earthquake, cpd_alarm, cpd_mary_calls, cpd_john
 
 # Check the model for consistency
 assert model.check_model()
+#print(model.check_model())
 
 # Perform inference
 inference = VariableElimination(model)
 
-# Calculate the probability of JohnCalls given Alarm is True
-q = inference.query(variables=['JohnCalls'], evidence={'Alarm': 1})
+q= inference.query(variables=['Alarm'])
 print(q)
+
+# Calculate the probability of Alarm given evidence that John didn't here the alarm
+q = inference.query(variables=['Alarm'], evidence={'JohnCalls': 0})
+print(q)
+
+#comput probability of alram given evidence that mary heard the alarm
+q = inference.query(variables=['Alarm'], evidence={'MaryCalls': 1})
+print(q)
+
+
